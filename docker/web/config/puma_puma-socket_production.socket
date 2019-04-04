@@ -1,0 +1,13 @@
+[Unit]
+Description=Puma HTTP Server Accept Sockets (application production)
+
+[Socket]
+ListenStream=/var/www/application/shared/tmp/sockets/puma.sock
+
+# Socket options matching Puma defaults
+NoDelay=true
+ReusePort=true
+Backlog=1024
+
+[Install]
+WantedBy=sockets.target

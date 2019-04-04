@@ -1,0 +1,60 @@
+FROM ubuntu:18.04
+
+ENV container docker
+ENV DEBIAN_FRONTEND noninteractive
+ENV LANG en_US.utf8
+ENV LC_ALL C
+
+RUN sed -i 's/# deb/deb/g' /etc/apt/sources.list
+
+RUN apt-get update \
+    && apt-get install -y systemd curl socat\
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN cd /lib/systemd/system/sysinit.target.wants/ \
+    && ls | grep -v systemd-tmpfiles-setup | xargs rm -f $1
+
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl* \
+    /lib/systemd/system/basic.target.wants/* \
+    /lib/systemd/system/anaconda.target.wants/* \
+    /lib/systemd/system/plymouth* \
+    /lib/systemd/system/systemd-update-utmp*
+
+VOLUME [ "/sys/fs/cgroup" ]
+
+# Install Node.js
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN apt-get install -y nodejs
+
+# Install RVM
+RUN gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+RUN curl -sSL https://get.rvm.io | bash -s stable
+SHELL ["bash", "-l", "-c"]
+RUN source /etc/profile.d/rvm.sh
+# RUN rvm install --default 2.5.5
+RUN rvm install --default 2.6.2
+RUN gem install bundler -V --no-document
+
+# Create basic rails app
+RUN gem install rails -v 5.2.3
+
+RUN mkdir -p /var/www/application && cd /var/www/application && rails new current --skip-active-record
+RUN mkdir -p /var/www/application/shared/log
+RUN mkdir -p /var/www/application/shared/tmp/pids
+RUN mkdir -p /var/www/application/shared/tmp/sockets
+
+COPY test-puma.sh /test-puma.sh
+
+COPY routes.rb /var/www/application/current/config/routes.rb
+COPY pages_controller.rb /var/www/application/current/app/controllers/pages_controller.rb
+
+RUN apt-get install -y tzdata
+
+RUN ln -sf /bin/bash /usr/bin/bash
+
+CMD ["/lib/systemd/systemd"]

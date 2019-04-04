@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  web:
+    image: puma-socket_web
+    container_name: web
+    volumes:
+    - ./docker/web/config/puma_puma-socket_production.service:/etc/systemd/system/puma_puma-socket_production.service:ro
+    - ./docker/web/config/puma_puma-socket_production.socket:/etc/systemd/system/puma_puma-socket_production.socket:ro
+    - ./docker/web/config/puma.rb:/var/www/application/shared/puma.rb:ro
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    build:
+      context: ./docker/web
+    expose:
+    - '3000'
+    ports:
+    - 3000:3000
+    hostname: web
+    restart: always
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    tmpfs:
+      - /run
+      - /run/lock

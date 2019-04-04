@@ -1,0 +1,23 @@
+[Unit]
+Description=Puma HTTP Server (application production)
+After=network.target
+Requires=puma_puma-socket_production.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/application/current
+
+# Helpful for debugging socket activation, etc.
+Environment=PUMA_DEBUG=1
+Environment=RACK_ENV=production
+Environment=RAILS_ENV=production
+Environment=RAILS_SERVE_STATIC_FILES=enabled
+Environment=BUNDLE_GEMFILE=/var/www/application/current/Gemfile
+
+ExecStart=/usr/local/rvm/bin/rvm /var/www/application/current do bundle exec puma -C /var/www/application/shared/puma.rb
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
